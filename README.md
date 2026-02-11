@@ -4,12 +4,39 @@ Production-grade event-driven microservices system for distributed order process
 
 ## Architecture
 
-Event-driven architecture with three microservices:
-- **Order Service**: Manages order lifecycle and state machine
-- **Payment Service**: Handles payment authorization with idempotency
-- **Inventory Service**: Manages inventory reservations
+Event-driven architecture with three microservices communicating via Kafka:
 
-Communication via Kafka with transactional outbox pattern, idempotent consumers, and DLQ handling.
+```
+    Client
+      │
+      ▼
+┌──────────────┐     Kafka Topics     ┌────────────────┐
+│Order Service │◄────────────────────►│Payment Service │
+│  (Port 3001) │  order.events        │  (Port 3002)   │
+│              │  payment.events      │                │
+│  PostgreSQL  │  inventory.events    │  PostgreSQL    │
+│   (orderdb)  │                      │  (paymentdb)   │
+└──────┬───────┘                      └────────────────┘
+       │
+       │  Kafka Topics
+       │
+       ▼
+┌─────────────────┐
+│Inventory Service│
+│  (Port 3003)    │
+│                 │
+│   PostgreSQL    │
+│ (inventorydb)   │
+└─────────────────┘
+```
+
+**Key Patterns:**
+- ✅ Transactional Outbox Pattern
+- ✅ Idempotent Consumers
+- ✅ Out-of-Order Event Handling
+- ✅ Dead Letter Queue (DLQ)
+
+📊 **[View Detailed Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)**
 
 ## Order State Machine
 
