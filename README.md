@@ -77,18 +77,18 @@ orderflow/
 
 ## Production Features
 
-✅ Transactional Outbox Pattern  
-✅ Idempotent Consumers  
-✅ Out-of-order Event Handling  
-✅ Dead Letter Queue (DLQ)  
-✅ Retry with Exponential Backoff  
-✅ Structured Logging with Correlation IDs  
-✅ Prometheus Metrics  
-✅ Health Checks  
-✅ Database Migrations  
-✅ Event Sourcing (Audit Log)  
-✅ Integration Tests with Testcontainers  
-✅ CI/CD Pipeline  
+Transactional Outbox Pattern  
+Idempotent Consumers  
+Out-of-order Event Handling  
+Dead Letter Queue (DLQ)  
+Retry with Exponential Backoff  
+Structured Logging with Correlation IDs  
+Prometheus Metrics  
+Health Checks  
+Database Migrations  
+Event Sourcing (Audit Log)  
+Integration Tests with Testcontainers  
+CI/CD Pipeline  
 
 ## License
 
