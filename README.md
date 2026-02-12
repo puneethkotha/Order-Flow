@@ -31,12 +31,12 @@ Event-driven architecture with three microservices communicating via Kafka:
 ```
 
 **Key Patterns:**
-- ✅ Transactional Outbox Pattern
-- ✅ Idempotent Consumers
-- ✅ Out-of-Order Event Handling
-- ✅ Dead Letter Queue (DLQ)
+- Transactional Outbox Pattern
+- Idempotent Consumers
+- Out-of-Order Event Handling
+- Dead Letter Queue (DLQ)
 
-📊 **[View Detailed Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)**
+ **[View Detailed Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)**
 
 ## Order State Machine
 
