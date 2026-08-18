@@ -29,7 +29,13 @@ async function bootstrap() {
   const idempotencyRepo = new IdempotencyRepository();
 
   // Initialize service
-  const orderService = new OrderService(orderRepo, outboxRepo, eventRepo, stateTrackingRepo);
+  const orderService = new OrderService(
+    orderRepo,
+    outboxRepo,
+    eventRepo,
+    stateTrackingRepo,
+    idempotencyRepo
+  );
 
   // Register routes
   registerRoutes(app, orderService);
@@ -66,17 +72,9 @@ async function bootstrap() {
     heartbeatInterval: 3000,
   });
 
-  const paymentEventConsumer = new PaymentEventConsumer(
-    paymentConsumer,
-    orderService,
-    idempotencyRepo
-  );
+  const paymentEventConsumer = new PaymentEventConsumer(paymentConsumer, orderService);
 
-  const inventoryEventConsumer = new InventoryEventConsumer(
-    inventoryConsumer,
-    orderService,
-    idempotencyRepo
-  );
+  const inventoryEventConsumer = new InventoryEventConsumer(inventoryConsumer, orderService);
 
   await paymentEventConsumer.start();
   await inventoryEventConsumer.start();

@@ -97,4 +97,13 @@ export const migrations = [
     `,
     down: `DROP TABLE IF EXISTS schema_migrations;`,
   },
+  {
+    version: 7,
+    name: 'add_payment_captured_to_state_tracking',
+    up: `
+      ALTER TABLE order_state_tracking
+        ADD COLUMN IF NOT EXISTS payment_captured BOOLEAN NOT NULL DEFAULT FALSE;
+    `,
+    down: `ALTER TABLE order_state_tracking DROP COLUMN IF EXISTS payment_captured;`,
+  },
 ];

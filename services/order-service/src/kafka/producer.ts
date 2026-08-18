@@ -18,10 +18,12 @@ class KafkaProducer {
       },
     });
 
+    // Idempotent producer: exactly-once-per-partition dedup without a
+    // transactionalId (the outbox publisher uses plain sends, not Kafka
+    // transactions, so a transactionalId here would be an error at send time).
     this.producer = this.kafka.producer({
       idempotent: true,
       maxInFlightRequests: 5,
-      transactionalId: `${config.kafka.clientId}-producer`,
     });
   }
 
