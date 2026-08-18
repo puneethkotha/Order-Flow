@@ -34,14 +34,14 @@ export class InventoryService {
     await db.transaction(async (client) => {
       if (!(await this.idempotencyRepo.claim(eventId, client))) return;
 
-      const reservations: { sku: string; quantity: number }[] = [];
+      const reservations: { id: string; sku: string; quantity: number }[] = [];
       const failedItems: { sku: string; requestedQuantity: number; availableQuantity: number }[] = [];
 
       for (const item of items) {
         const reserved = await this.inventoryRepo.reserveQuantity(item.sku, item.quantity, client);
         if (reserved) {
-          await this.reservationRepo.create(orderId, item.sku, item.quantity, client);
-          reservations.push({ sku: item.sku, quantity: item.quantity });
+          const row = await this.reservationRepo.create(orderId, item.sku, item.quantity, client);
+          reservations.push({ id: row.id, sku: item.sku, quantity: item.quantity });
         } else {
           const inventoryItem = await this.inventoryRepo.findBySku(item.sku, client);
           const available = inventoryItem ? inventoryItem.quantity - inventoryItem.reservedQuantity : 0;
@@ -51,9 +51,11 @@ export class InventoryService {
 
       if (failedItems.length > 0) {
         // Roll back any partial reservations made in this transaction so a
-        // partially-failed order leaks no stock.
+        // partially-failed order leaks no stock and leaves no active row that a
+        // later cancel could release a second time.
         for (const r of reservations) {
           await this.inventoryRepo.releaseQuantity(r.sku, r.quantity, client);
+          await this.reservationRepo.updateStatus(r.id, InventoryReservationStatus.RELEASED, client);
         }
         const event: InventoryFailedEvent = {
           eventId: uuidv4(),
@@ -76,7 +78,11 @@ export class InventoryService {
         timestamp: new Date().toISOString(),
         correlationId,
         version: 1,
-        payload: { reservationId: uuidv4(), orderId, items: reservations },
+        payload: {
+          reservationId: uuidv4(),
+          orderId,
+          items: reservations.map((r) => ({ sku: r.sku, quantity: r.quantity })),
+        },
       };
       await this.outboxRepo.save(orderId, Topics.INVENTORY_EVENTS, orderId, event, client);
       logger.info({ orderId, items: reservations, correlationId }, 'Inventory reserved');
