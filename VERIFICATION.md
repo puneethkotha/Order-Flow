@@ -321,22 +321,22 @@ npm run demo
 
 **Expected Output:**
 ```
-🚀 OrderFlow Demo Script
+ OrderFlow Demo Script
 ==================================================
 
-📦 Step 1: Creating order...
-✅ Order created: 550e8400-...
+ Step 1: Creating order...
+ Order created: 550e8400-...
    State: DRAFT
    Total: $109.97
 
-✅ Step 2: Approving order...
+ Step 2: Approving order...
 ...
 
-🎉 Step 5: Completing order...
-✅ Order completed: 550e8400-...
+ Step 5: Completing order...
+ Order completed: 550e8400-...
    State: COMPLETED
 
-🎊 Demo completed successfully!
+ Demo completed successfully!
 ```
 
 ## Observability
@@ -427,6 +427,6 @@ Once all items are checked, the system is verified and ready for:
 - [ ] Interview presentation
 - [ ] Production deployment (with additional hardening)
 
-**Verified by:** _________________  
-**Date:** _________________  
+**Verified by:** _________________
+**Date:** _________________
 **Notes:** _________________

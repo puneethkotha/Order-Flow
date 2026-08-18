@@ -5,12 +5,11 @@ const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:300
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function demo() {
-  console.log('🚀 OrderFlow Demo Script\n');
+  console.log('OrderFlow demo');
   console.log('='.repeat(50));
 
   try {
-    // Step 1: Create order
-    console.log('\n📦 Step 1: Creating order...');
+    console.log('\nStep 1: creating order');
     const createResponse = await axios.post(`${ORDER_SERVICE_URL}/orders`, {
       customerId: 'demo-customer-001',
       items: [
@@ -20,20 +19,15 @@ async function demo() {
     });
 
     const orderId = createResponse.data.id;
-    console.log(`✅ Order created: ${orderId}`);
-    console.log(`   State: ${createResponse.data.state}`);
-    console.log(`   Total: $${createResponse.data.total}`);
+    console.log(`  order created: ${orderId}`);
+    console.log(`  state: ${createResponse.data.state}`);
+    console.log(`  total: ${createResponse.data.total}`);
 
-    // Step 2: Approve order
-    console.log('\n✅ Step 2: Approving order...');
+    console.log('\nStep 2: approving order');
     await axios.post(`${ORDER_SERVICE_URL}/orders/${orderId}/approve`);
-    console.log(`✅ Order approved: ${orderId}`);
-    console.log('   → ORDER_APPROVED event published to Kafka');
-    console.log('   → Payment Service will authorize payment');
-    console.log('   → Inventory Service will reserve inventory');
+    console.log('  ORDER_APPROVED published; payment authorizes and inventory reserves');
 
-    // Step 3: Wait for payment and inventory
-    console.log('\n⏳ Step 3: Waiting for payment authorization and inventory reservation...');
+    console.log('\nStep 3: waiting for payment authorization and inventory reservation');
     let order = null;
     let attempts = 0;
     const maxAttempts = 30;
@@ -44,77 +38,48 @@ async function demo() {
 
       const response = await axios.get(`${ORDER_SERVICE_URL}/orders/${orderId}`);
       order = response.data;
-
-      console.log(`   [${attempts}s] Order state: ${order.state}`);
+      console.log(`  [${attempts}s] state: ${order.state}`);
 
       if (order.state === 'FULFILLING') {
-        console.log('✅ Order transitioned to FULFILLING!');
-        console.log('   ✓ Payment authorized');
-        console.log('   ✓ Inventory reserved');
+        console.log('  order reached FULFILLING (payment authorized, inventory reserved, capture requested)');
         break;
       }
-
       if (order.state === 'CANCELLED') {
-        console.log('❌ Order was cancelled');
-        console.log(`   Reason: Payment or inventory failed`);
+        console.log('  order cancelled (payment or inventory failed); compensation ran');
         return;
       }
-
       if (attempts === maxAttempts) {
-        console.log('⚠️  Timeout waiting for order to progress');
-        console.log(`   Current state: ${order.state}`);
-        console.log('   Check service logs for errors');
+        console.log(`  timeout; current state: ${order.state}`);
         return;
       }
     }
 
-    // Step 4: Ship order
-    console.log('\n📦 Step 4: Shipping order...');
+    console.log('\nStep 4: shipping order');
     await axios.post(`${ORDER_SERVICE_URL}/orders/${orderId}/ship`);
     const shippedResponse = await axios.get(`${ORDER_SERVICE_URL}/orders/${orderId}`);
-    console.log(`✅ Order shipped: ${orderId}`);
-    console.log(`   State: ${shippedResponse.data.state}`);
+    console.log(`  state: ${shippedResponse.data.state}`);
 
-    // Step 5: Complete order
-    console.log('\n🎉 Step 5: Completing order...');
+    console.log('\nStep 5: completing order');
     await axios.post(`${ORDER_SERVICE_URL}/orders/${orderId}/complete`);
     const completedResponse = await axios.get(`${ORDER_SERVICE_URL}/orders/${orderId}`);
-    console.log(`✅ Order completed: ${orderId}`);
-    console.log(`   State: ${completedResponse.data.state}`);
-    console.log(`   Version: ${completedResponse.data.version}`);
+    console.log(`  state: ${completedResponse.data.state}`);
+    console.log(`  version: ${completedResponse.data.version}`);
 
-    // Summary
     console.log('\n' + '='.repeat(50));
-    console.log('🎊 Demo completed successfully!');
-    console.log('\n📊 Order Journey:');
-    console.log('   DRAFT → APPROVED → FULFILLING → SHIPPED → COMPLETED');
-    console.log('\n🔍 Key Features Demonstrated:');
-    console.log('   ✓ Event-driven architecture (Kafka)');
-    console.log('   ✓ Transactional outbox pattern');
-    console.log('   ✓ Idempotent consumers');
-    console.log('   ✓ Out-of-order event handling');
-    console.log('   ✓ Order state machine');
-    console.log('   ✓ Service orchestration');
-    console.log('\n💡 Try exploring:');
-    console.log(`   - View order: curl ${ORDER_SERVICE_URL}/orders/${orderId}`);
-    console.log(`   - Kafka UI: http://localhost:8080`);
-    console.log(`   - Database: docker exec -it orderflow-postgres psql -U orderflow -d orderdb`);
-
-    console.log('\n' + '='.repeat(50) + '\n');
+    console.log('Demo completed. Journey: DRAFT -> APPROVED -> FULFILLING -> SHIPPED -> COMPLETED');
+    console.log(`  view order:  curl ${ORDER_SERVICE_URL}/orders/${orderId}`);
+    console.log('  Kafka UI:    http://localhost:8080');
   } catch (error: any) {
-    console.error('\n❌ Demo failed:');
+    console.error('\nDemo failed:');
     if (error.response) {
-      console.error(`   Status: ${error.response.status}`);
-      console.error(`   Error: ${JSON.stringify(error.response.data, null, 2)}`);
+      console.error(`  status: ${error.response.status}`);
+      console.error(`  error: ${JSON.stringify(error.response.data, null, 2)}`);
     } else if (error.request) {
-      console.error('   No response received from server');
-      console.error('   Make sure services are running:');
-      console.error('   - npm run docker:up');
-      console.error('   - cd services/order-service && npm run dev');
-      console.error('   - cd services/payment-service && npm run dev');
-      console.error('   - cd services/inventory-service && npm run dev');
+      console.error('  no response received; make sure the services are running:');
+      console.error('  - npm run docker:up');
+      console.error('  - npm run services:dev');
     } else {
-      console.error(`   ${error.message}`);
+      console.error(`  ${error.message}`);
     }
     process.exit(1);
   }
