@@ -14,7 +14,7 @@ coverage/
 
 # TLA+ / Apalache tooling and generated artifacts
 tools/
-spec/states/
+spec/states*
 spec/_apalache-out/
 spec/*_TTrace_*.tla
 spec/*_TTrace_*.bin
