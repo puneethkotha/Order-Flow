@@ -1,0 +1,95 @@
+[
+  {
+    "id": "happy",
+    "title": "Happy path",
+    "description": "Payment authorizes and inventory reserves. The corrected design captures and completes; the uncorrected design has no capture step and is stranded in FULFILLING (L1).",
+    "faults": [],
+    "seed": 7,
+    "modes": {
+      "uncorrected": {
+        "file": "happy-uncorrected.json",
+        "ok": false,
+        "steps": 5,
+        "violated": [
+          "L1"
+        ]
+      },
+      "corrected": {
+        "file": "happy-corrected.json",
+        "ok": true,
+        "steps": 7,
+        "violated": []
+      }
+    }
+  },
+  {
+    "id": "stock-leak",
+    "title": "Stock leak on payment failure",
+    "description": "Inventory reserves, then payment fails and the order is cancelled. The corrected design releases the reservation; the uncorrected design leaks it (I4).",
+    "faults": [],
+    "seed": 3,
+    "modes": {
+      "uncorrected": {
+        "file": "stock-leak-uncorrected.json",
+        "ok": false,
+        "steps": 5,
+        "violated": [
+          "I4"
+        ]
+      },
+      "corrected": {
+        "file": "stock-leak-corrected.json",
+        "ok": true,
+        "steps": 7,
+        "violated": []
+      }
+    }
+  },
+  {
+    "id": "held-auth",
+    "title": "Held authorization on inventory failure",
+    "description": "Payment authorizes, then inventory fails and the order is cancelled. The corrected design voids the authorization; the uncorrected design leaves it live (I5).",
+    "faults": [],
+    "seed": 5,
+    "modes": {
+      "uncorrected": {
+        "file": "held-auth-uncorrected.json",
+        "ok": false,
+        "steps": 5,
+        "violated": [
+          "I5"
+        ]
+      },
+      "corrected": {
+        "file": "held-auth-corrected.json",
+        "ok": true,
+        "steps": 7,
+        "violated": []
+      }
+    }
+  },
+  {
+    "id": "duplicate",
+    "title": "Duplicate delivery double-reserves",
+    "description": "A re-delivered ORDER_APPROVED reaches inventory. The corrected design deduplicates by eventId; the uncorrected design (offset-keyed) reserves twice (I7).",
+    "faults": [],
+    "seed": 11,
+    "modes": {
+      "uncorrected": {
+        "file": "duplicate-uncorrected.json",
+        "ok": false,
+        "steps": 7,
+        "violated": [
+          "I7",
+          "L1"
+        ]
+      },
+      "corrected": {
+        "file": "duplicate-corrected.json",
+        "ok": true,
+        "steps": 8,
+        "violated": []
+      }
+    }
+  }
+]

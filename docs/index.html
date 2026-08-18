@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OrderFlow — explorable trace</title>
+    <style>
+      :root {
+        --bg: #0b0d0e;
+        --panel: #131719;
+        --line: #23292c;
+        --fg: #e6eaec;
+        --muted: #8a969c;
+        --hold: #3dd68c;
+        --violated: #ff5c5c;
+        --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+        --sans: "Switzer", ui-sans-serif, system-ui, -apple-system, sans-serif;
+        --s1: 4px;
+        --s2: 8px;
+        --s3: 12px;
+        --s4: 16px;
+        --s6: 24px;
+        --s8: 32px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      header { padding: var(--s6) var(--s8) var(--s4); border-bottom: 1px solid var(--line); }
+      header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+      header p { margin: var(--s2) 0 0; color: var(--muted); max-width: 70ch; }
+      .grid {
+        display: grid;
+        grid-template-columns: 220px 1fr 300px;
+        gap: var(--s4);
+        padding: var(--s4) var(--s8);
+        align-items: start;
+      }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: var(--s4); }
+      .panel h2 { margin: 0 0 var(--s3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+      .num, .mono { font-family: var(--mono); }
+      /* invariant rail */
+      .inv { display: flex; align-items: baseline; gap: var(--s2); padding: var(--s1) 0; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hold); flex: 0 0 auto; align-self: center; }
+      .dot.red { background: var(--violated); }
+      .inv .id { font-family: var(--mono); width: 24px; color: var(--muted); }
+      .inv .title { font-size: 12px; }
+      .inv.red .title { color: var(--violated); }
+      /* lanes */
+      .lanes { display: grid; grid-template-columns: 90px 1fr; gap: var(--s2) var(--s3); }
+      .lane-label { color: var(--muted); font-size: 12px; align-self: center; }
+      .lane-track { display: flex; gap: var(--s1); flex-wrap: wrap; min-height: 22px; align-items: center; }
+      .node { font-family: var(--mono); font-size: 11px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+      .node.active { color: var(--fg); border-color: var(--hold); }
+      .node.fault { border-color: var(--violated); color: var(--violated); border-style: dashed; }
+      .invbar { height: 6px; border-radius: 3px; margin-top: var(--s4); background: var(--hold); }
+      .invbar.red { background: linear-gradient(90deg, var(--hold) var(--break), var(--violated) var(--break)); }
+      .state { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s2); margin-top: var(--s4); }
+      .state .kv { border: 1px solid var(--line); border-radius: 4px; padding: var(--s2) var(--s3); }
+      .state .k { color: var(--muted); font-size: 11px; }
+      .state .v { font-family: var(--mono); font-size: 13px; }
+      .state .v.red { color: var(--violated); }
+      /* controls */
+      .row { margin-bottom: var(--s4); }
+      label { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--s2); }
+      select, button, input[type="range"] { width: 100%; }
+      select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: var(--s2); font-family: var(--sans); }
+      .toggle { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); }
+      .toggle button { background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: var(--s2); cursor: pointer; font-family: var(--mono); font-size: 12px; }
+      .toggle button.on { color: var(--fg); border-color: var(--fg); }
+      .toggle button.on.corrected { border-color: var(--hold); color: var(--hold); }
+      .toggle button.on.uncorrected { border-color: var(--violated); color: var(--violated); }
+      .stepline { display: flex; align-items: center; gap: var(--s3); }
+      .stepnum { font-family: var(--mono); color: var(--muted); font-size: 12px; white-space: nowrap; }
+      .action { font-family: var(--mono); font-size: 12px; color: var(--fg); margin-top: var(--s2); min-height: 18px; }
+      .desc { color: var(--muted); font-size: 12px; }
+      button.play { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: var(--s2); cursor: pointer; margin-top: var(--s2); }
+      .verdict { font-family: var(--mono); font-size: 12px; margin-top: var(--s2); }
+      .verdict.red { color: var(--violated); }
+      .verdict.green { color: var(--hold); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>OrderFlow — a saga proven correct under failure</h1>
+      <p>
+        Pick a scenario and flip between the uncorrected and corrected design on the same seed. The
+        invariant rail on the left is green while every invariant holds and turns red at the exact
+        step one breaks. Traces are produced by the deterministic simulator and committed to the repo.
+      </p>
+    </header>
+
+    <div class="grid">
+      <div class="panel" id="rail">
+        <h2>Invariants</h2>
+        <div id="invlist"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Saga timeline</h2>
+        <div class="lanes" id="lanes"></div>
+        <div class="invbar" id="invbar"></div>
+        <div class="action mono" id="action"></div>
+        <div class="state" id="state"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Controls</h2>
+        <div class="row">
+          <label>Scenario</label>
+          <select id="scenario"></select>
+          <div class="desc" id="scenario-desc" style="margin-top:8px"></div>
+        </div>
+        <div class="row">
+          <label>Design</label>
+          <div class="toggle">
+            <button id="btn-uncorrected" class="uncorrected">Uncorrected</button>
+            <button id="btn-corrected" class="corrected">Corrected</button>
+          </div>
+        </div>
+        <div class="row">
+          <label>Faults</label>
+          <div class="mono desc" id="faults"></div>
+        </div>
+        <div class="row">
+          <label>Step (<span class="stepnum" id="stepnum">0</span>)</label>
+          <input type="range" id="scrub" min="0" max="0" value="0" />
+          <button class="play" id="play">Play</button>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+    </div>
+
+    <script>
+      const INV_TITLES = {
+        I1: 'Capture implies reserve',
+        I2: 'Capture implies authorize',
+        I3: 'Funds safety',
+        I4: 'No stock leak',
+        I5: 'No held authorization',
+        I6: 'Single fulfillment',
+        I7: 'Inventory conservation',
+        I8: 'Monotonic state',
+        L1: 'Eventual resolution',
+      };
+      const INV_ORDER = ['I1', 'I2', 'I3', 'I4', 'I5', 'I6', 'I7', 'I8', 'L1'];
+
+      let manifest = [];
+      let bundle = null;
+      let mode = 'uncorrected';
+      let step = 0;
+      let playTimer = null;
+
+      async function loadManifest() {
+        manifest = await (await fetch('traces/manifest.json')).json();
+        const sel = document.getElementById('scenario');
+        sel.innerHTML = manifest.map((m, i) => `<option value="${i}">${m.title}</option>`).join('');
+        sel.onchange = () => loadScenario(Number(sel.value));
+        document.getElementById('btn-uncorrected').onclick = () => setMode('uncorrected');
+        document.getElementById('btn-corrected').onclick = () => setMode('corrected');
+        document.getElementById('scrub').oninput = (e) => { setStep(Number(e.target.value)); };
+        document.getElementById('play').onclick = play;
+        loadScenario(0);
+      }
+
+      async function loadScenario(i) {
+        const m = manifest[i];
+        document.getElementById('scenario-desc').textContent = m.description;
+        document.getElementById('faults').textContent = m.faults.length ? m.faults.join(', ') : 'none';
+        window._current = m;
+        await setMode(mode);
+      }
+
+      async function setMode(newMode) {
+        mode = newMode;
+        document.getElementById('btn-uncorrected').classList.toggle('on', mode === 'uncorrected');
+        document.getElementById('btn-corrected').classList.toggle('on', mode === 'corrected');
+        const file = window._current.modes[mode].file;
+        bundle = await (await fetch('traces/' + file).catch(() => null)).json();
+        const scrub = document.getElementById('scrub');
+        scrub.max = bundle.steps.length - 1;
+        setStep(bundle.steps.length - 1);
+      }
+
+      function invBrokenAt(id, atStep) {
+        const b = bundle.breaks[id];
+        return b !== null && b !== undefined && atStep >= b;
+      }
+
+      function setStep(s) {
+        step = s;
+        document.getElementById('stepnum').textContent = String(s);
+        document.getElementById('scrub').value = String(s);
+        const st = bundle.steps[s];
+        renderRail(s);
+        renderLanes(s);
+        renderState(st);
+        renderBar(s);
+        document.getElementById('action').textContent = st.action;
+        const verdict = document.getElementById('verdict');
+        const anyBroken = INV_ORDER.some((id) => invBrokenAt(id, step));
+        verdict.textContent = anyBroken ? 'INVARIANT VIOLATED' : 'all invariants hold';
+        verdict.className = 'verdict ' + (anyBroken ? 'red' : 'green');
+      }
+
+      function renderRail(atStep) {
+        const el = document.getElementById('invlist');
+        el.innerHTML = INV_ORDER.map((id) => {
+          const red = invBrokenAt(id, atStep);
+          return `<div class="inv ${red ? 'red' : ''}"><span class="dot ${red ? 'red' : ''}"></span><span class="id">${id}</span><span class="title">${INV_TITLES[id]}</span></div>`;
+        }).join('');
+      }
+
+      const LANE_OF = {
+        order: 'Order', coordinator: 'Order',
+        payment: 'Payment', inventory: 'Inventory',
+      };
+
+      function renderLanes(atStep) {
+        const lanes = { Order: [], Payment: [], Inventory: [], Channel: [] };
+        for (let i = 1; i <= atStep; i++) {
+          const st = bundle.steps[i];
+          if (st.fault) {
+            lanes.Channel.push({ label: st.fault, fault: true, active: i === atStep });
+            continue;
+          }
+          if (!st.message) continue;
+          const laneName = st.message.to === 'payment' ? 'Payment' : st.message.to === 'inventory' ? 'Inventory' : 'Order';
+          lanes[laneName].push({ label: st.message.type, active: i === atStep });
+        }
+        const el = document.getElementById('lanes');
+        el.innerHTML = ['Order', 'Payment', 'Inventory', 'Channel']
+          .map((name) => {
+            const nodes = lanes[name]
+              .map((n) => `<span class="node ${n.active ? 'active' : ''} ${n.fault ? 'fault' : ''}">${n.label}</span>`)
+              .join('');
+            return `<div class="lane-label">${name}</div><div class="lane-track">${nodes || '<span class="node">—</span>'}</div>`;
+          })
+          .join('');
+      }
+
+      function renderState(st) {
+        const w = st.world;
+        const order = Object.values(w.orders)[0] || {};
+        const pay = Object.values(w.payments)[0] || {};
+        const res = Object.values(w.reservations)[0] || {};
+        const stock = Object.values(w.stock)[0] || {};
+        const cells = [
+          ['order.state', order.state, order.state === 'CANCELLED'],
+          ['payment', pay.phase, pay.phase === 'FAILED'],
+          ['reservedQty', res.reservedQty, false],
+          ['stock.reserved', stock.reserved, false],
+        ];
+        document.getElementById('state').innerHTML = cells
+          .map(([k, v, red]) => `<div class="kv"><div class="k">${k}</div><div class="v ${red ? 'red' : ''}">${v ?? '—'}</div></div>`)
+          .join('');
+      }
+
+      function renderBar(atStep) {
+        const bar = document.getElementById('invbar');
+        let earliest = null;
+        for (const id of INV_ORDER) {
+          const b = bundle.breaks[id];
+          if (b !== null && b !== undefined && atStep >= b) earliest = earliest === null ? b : Math.min(earliest, b);
+        }
+        if (earliest === null) {
+          bar.className = 'invbar';
+          bar.style.removeProperty('--break');
+        } else {
+          const pct = Math.round((earliest / Math.max(1, bundle.steps.length - 1)) * 100);
+          bar.style.setProperty('--break', pct + '%');
+          bar.className = 'invbar red';
+        }
+      }
+
+      function play() {
+        if (playTimer) { clearInterval(playTimer); playTimer = null; document.getElementById('play').textContent = 'Play'; return; }
+        document.getElementById('play').textContent = 'Pause';
+        let s = 0;
+        setStep(0);
+        playTimer = setInterval(() => {
+          s += 1;
+          if (s > bundle.steps.length - 1) { clearInterval(playTimer); playTimer = null; document.getElementById('play').textContent = 'Play'; return; }
+          setStep(s);
+        }, 350);
+      }
+
+      loadManifest();
+    </script>
+  </body>
+</html>

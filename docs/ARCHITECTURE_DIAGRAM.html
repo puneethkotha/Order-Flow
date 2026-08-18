@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrderFlow Architecture Diagrams</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        h2 {
+            color: #2980b9;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+            margin-top: 40px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border-radius: 4px;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .toc {
+            background: #f0f7ff;
+            border: 1px solid #3498db;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            color: #2980b9;
+            border: none;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>OrderFlow Architecture Diagrams</h1>
+    
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#system-architecture">System Architecture</a></li>
+            <li><a href="#state-machine">Order State Machine</a></li>
+            <li><a href="#event-flow">Event Flow - Happy Path</a></li>
+            <li><a href="#production-patterns">Production Patterns</a></li>
+            <li><a href="#metrics">Key Metrics & Monitoring</a></li>
+            <li><a href="#failures">Failure Scenarios</a></li>
+            <li><a href="#tech-stack">Technology Stack</a></li>
+        </ul>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h2 id="system-architecture">System Architecture</h2>
+    
+    <pre>
+                                ┌─────────────────────────────────────┐
+                                │         Client / API Users          │
+                                └──────────────┬──────────────────────┘
+                                               │
+                                               │ HTTP
+                                               ▼
+                ┌──────────────────────────────────────────────────────┐
+                │          Order Service (Port 3001)                   │
+                │  ┌────────────────────────────────────────────────┐  │
+                │  │  API: Create, Approve, Ship, Complete Orders  │  │
+                │  │  State Machine: DRAFT → APPROVED → FULFILLING │  │
+                │  │                → SHIPPED → COMPLETED           │  │
+                │  └────────────────────────────────────────────────┘  │
+                │                                                      │
+                │  ┌──────────────┐  ┌────────────────────────────┐  │
+                │  │   Outbox     │  │  Payment/Inventory Event   │  │
+                │  │  Publisher   │  │      Consumers             │  │
+                │  └──────────────┘  └────────────────────────────┘  │
+                └──────────┬───────────────────┬───────────────────────┘
+                           │                   │
+                           │                   │
+                ┌──────────▼───────────────────▼─────────────┐
+                │         PostgreSQL (orderdb)               │
+                │  • orders                                  │
+                │  • order_events (audit log)                │
+                │  • order_state_tracking                    │
+                │  • outbox (transactional outbox)           │
+                │  • processed_messages (idempotency)        │
+                └────────────────────────────────────────────┘
+                           │
+                           │ Events published
+                           ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                      Apache Kafka Cluster                            │
+│  ┌────────────────┐  ┌──────────────────┐  ┌────────────────────┐  │
+│  │ order.events   │  │ payment.events   │  │ inventory.events   │  │
+│  └────────────────┘  └──────────────────┘  └────────────────────┘  │
+│  ┌────────────────┐                                                 │
+│  │   order.dlq    │  (Dead Letter Queue)                           │
+│  └────────────────┘                                                 │
+└───────┬──────────────────────────┬───────────────────────────────────┘
+        │                          │
+        │ ORDER_APPROVED           │ ORDER_APPROVED
+        │                          │
+┌───────▼──────────────┐   ┌──────▼────────────────────┐
+│  Payment Service     │   │  Inventory Service        │
+│    (Port 3002)       │   │     (Port 3003)           │
+│                      │   │                           │
+│ ┌─────────────────┐  │   │ ┌──────────────────────┐  │
+│ │ Idempotency Key │  │   │ │ Pessimistic Locking │  │
+│ │   Validation    │  │   │ │ (SELECT FOR UPDATE) │  │
+│ └─────────────────┘  │   │ └──────────────────────┘  │
+│                      │   │                           │
+│ ┌─────────────────┐  │   │ ┌──────────────────────┐  │
+│ │  Authorize      │  │   │ │  Reserve Inventory   │  │
+│ │  Payment        │  │   │ │  (Check Stock)       │  │
+│ └─────────────────┘  │   │ └──────────────────────┘  │
+└──────┬───────────────┘   └───────┬───────────────────┘
+       │                           │
+       │                           │
+┌──────▼───────────────┐   ┌───────▼────────────────────┐
+│ PostgreSQL           │   │ PostgreSQL                 │
+│   (paymentdb)        │   │   (inventorydb)            │
+│ • payments           │   │ • inventory_items          │
+│ • outbox             │   │ • inventory_reservations   │
+│ • processed_messages │   │ • outbox                   │
+└──────┬───────────────┘   │ • processed_messages       │
+       │                   └───────┬────────────────────┘
+       │                           │
+       │ PAYMENT_AUTHORIZED        │ INVENTORY_RESERVED
+       │ PAYMENT_FAILED            │ INVENTORY_FAILED
+       └───────────┬───────────────┘
+                   │
+                   │ Events published back to Kafka
+                   ▼
+        ┌──────────────────────┐
+        │  Order Service       │
+        │  Event Consumers     │
+        │  (Update State)      │
+        └──────────────────────┘
+    </pre>
+
+    <div class="page-break"></div>
+
+    <h2 id="state-machine">Order State Machine</h2>
+    
+    <pre>
+                        ┌─────────┐
+                        │  DRAFT  │ ◄─── Order Created
+                        └────┬────┘
+                             │
+                             │ approve()
+                             │
+                        ┌────▼────────┐
+                        │  APPROVED   │
+                        └─────────────┘
+                             │
+                             │ Wait for BOTH:
+                             │  • PAYMENT_AUTHORIZED
+                             │  • INVENTORY_RESERVED
+                             │
+                        ┌────▼─────────┐
+                        │  FULFILLING  │
+                        └──────┬───────┘
+                               │
+                               │ ship()
+                               │
+                          ┌────▼────┐
+                          │ SHIPPED │
+                          └────┬────┘
+                               │
+                               │ complete()
+                               │
+                         ┌─────▼──────┐
+                         │ COMPLETED  │
+                         └────────────┘
+
+              ┌──────────────────────────────┐
+              │  Any state (except COMPLETED)│
+              │         ↓                    │
+              │    PAYMENT_FAILED            │
+              │    INVENTORY_FAILED          │
+              │    Manual Cancellation       │
+              │         ↓                    │
+              │    ┌───────────┐             │
+              │    │ CANCELLED │             │
+              │    └───────────┘             │
+              └──────────────────────────────┘
+    </pre>
+
+    <div class="page-break"></div>
+
+    <h2 id="event-flow">Event Flow - Happy Path</h2>
+    
+    <pre>
+1. Client Request
+   │
+   └─► POST /orders (create)
+       │
+       └─► Order Service
+           │
+           ├─► Database: Insert order (state: DRAFT)
+           └─► Response: Order ID
+
+2. Order Approval
+   │
+   └─► POST /orders/:id/approve
+       │
+       └─► Order Service
+           │
+           ├─► Database Transaction:
+           │   ├─ Update order (state: APPROVED)
+           │   └─ Insert into outbox table (ORDER_APPROVED event)
+           │
+           └─► Outbox Publisher (polls every 1s)
+               │
+               └─► Kafka: Publish ORDER_APPROVED to order.events
+
+3. Parallel Processing
+   │
+   ├─► Payment Service                   ├─► Inventory Service
+   │   │                                 │   │
+   │   ├─ Kafka Consumer                 │   ├─ Kafka Consumer
+   │   │  (reads ORDER_APPROVED)         │   │  (reads ORDER_APPROVED)
+   │   │                                 │   │
+   │   ├─ Check Idempotency              │   ├─ Check Idempotency
+   │   │  (processed_messages table)     │   │  (processed_messages table)
+   │   │                                 │   │
+   │   ├─ Authorize Payment              │   ├─ Reserve Inventory
+   │   │  (90% success rate - demo)      │   │  (SELECT FOR UPDATE)
+   │   │                                 │   │
+   │   ├─ Database Transaction:          │   ├─ Database Transaction:
+   │   │  ├─ Insert payment record       │   │  ├─ Reserve quantity
+   │   │  ├─ Insert outbox event         │   │  ├─ Insert reservation
+   │   │  └─ Mark message processed      │   │  ├─ Insert outbox event
+   │   │                                 │   │  └─ Mark message processed
+   │   │                                 │   │
+   │   └─► Kafka: PAYMENT_AUTHORIZED     │   └─► Kafka: INVENTORY_RESERVED
+
+4. State Transition
+   │
+   └─► Order Service Event Consumers
+       │
+       ├─► Received: PAYMENT_AUTHORIZED
+       │   └─ Update order_state_tracking (payment_authorized = true)
+       │
+       ├─► Received: INVENTORY_RESERVED
+       │   └─ Update order_state_tracking (inventory_reserved = true)
+       │
+       └─► Check: Both payment AND inventory ready?
+           │
+           └─► YES → Transition to FULFILLING
+               │
+               ├─► Database Transaction:
+               │   ├─ Update order (state: FULFILLING)
+               │   └─ Insert outbox (ORDER_STATE_CHANGED event)
+               │
+               └─► Kafka: Publish ORDER_STATE_CHANGED
+
+5. Shipping & Completion
+   │
+   ├─► POST /orders/:id/ship
+   │   └─► State: FULFILLING → SHIPPED
+   │
+   └─► POST /orders/:id/complete
+       └─► State: SHIPPED → COMPLETED
+    </pre>
+
+    <div class="page-break"></div>
+
+    <h2 id="production-patterns">Production Patterns</h2>
+    
+    <h3>1. Transactional Outbox Pattern</h3>
+    
+    <pre>
+┌──────────────────────────────────────────────────┐
+│           Business Transaction                   │
+│                                                  │
+│  ┌────────────────────────────────────────┐     │
+│  │  1. Update Business Entity             │     │
+│  │     (e.g., order.state = APPROVED)     │     │
+│  │                                         │     │
+│  │  2. Insert Event into Outbox Table     │     │
+│  │     (event_type, payload, status)      │     │
+│  │                                         │     │
+│  │  COMMIT                                 │     │
+│  └────────────────────────────────────────┘     │
+└──────────────────────────────────────────────────┘
+                │
+                ▼
+   ┌────────────────────────────┐
+   │   Outbox Publisher         │
+   │   (Separate Process)       │
+   │                            │
+   │   Polls every 1 second     │
+   │   SELECT * FROM outbox     │
+   │   WHERE status = PENDING   │
+   └─────────────┬──────────────┘
+                 │
+                 ▼
+        ┌────────────────┐
+        │     Kafka      │
+        │   (Publish)    │
+        └────────┬───────┘
+                 │
+                 ▼
+      ┌──────────────────────┐
+      │   Mark as DELIVERED  │
+      │   in outbox table    │
+      └──────────────────────┘
+    </pre>
+
+    <h3>2. Idempotent Consumer</h3>
+    
+    <pre>
+     Kafka Message Arrives
+            │
+            ▼
+┌───────────────────────────┐
+│  Generate Message ID      │
+│  topic-partition-offset   │
+└───────────┬───────────────┘
+            │
+            ▼
+┌───────────────────────────┐
+│  Check processed_messages │
+│  WHERE message_id = ?     │
+└───────────┬───────────────┘
+            │
+    ┌───────┴────────┐
+    │                │
+ Found            Not Found
+    │                │
+    ▼                ▼
+┌────────┐    ┌──────────────────┐
+│ Skip   │    │  Process Message │
+│(Already│    │                  │
+│Processed)    │  1. Execute logic│
+└────────┘    │  2. Insert into  │
+              │     processed_    │
+              │     messages      │
+              └──────────────────┘
+    </pre>
+
+    <h3>3. Out-of-Order Event Handling</h3>
+    
+    <div class="highlight">
+        <strong>Order State Tracking Table:</strong>
+        <pre>
+┌──────────┬──────────────────┬──────────────────┐
+│ order_id │payment_authorized│inventory_reserved│
+├──────────┼──────────────────┼──────────────────┤
+│ 123-abc  │      false       │      false       │
+└──────────┴──────────────────┴──────────────────┘
+        </pre>
+    </div>
+    
+    <pre>
+Scenario A: Payment arrives first
+│
+├─► PAYMENT_AUTHORIZED arrives
+│   └─► Update: payment_authorized = true
+│   └─► Check: inventory_reserved? NO → Wait
+│
+└─► INVENTORY_RESERVED arrives
+    └─► Update: inventory_reserved = true
+    └─► Check: BOTH true? YES → Transition to FULFILLING
+
+Scenario B: Inventory arrives first  
+│
+├─► INVENTORY_RESERVED arrives
+│   └─► Update: inventory_reserved = true
+│   └─► Check: payment_authorized? NO → Wait
+│
+└─► PAYMENT_AUTHORIZED arrives
+    └─► Update: payment_authorized = true
+    └─► Check: BOTH true? YES → Transition to FULFILLING
+
+Result: Order progresses correctly regardless of event order!
+    </pre>
+
+    <div class="page-break"></div>
+
+    <h2 id="metrics">Key Metrics & Monitoring</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Metrics</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Service Metrics</strong></td>
+                <td>
+                    • Request Rate (orders/sec)<br>
+                    • Request Latency (p50, p95, p99)<br>
+                    • Error Rate (% failed requests)<br>
+                    • Order State Distribution
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Kafka Metrics</strong></td>
+                <td>
+                    • Consumer Lag (messages behind)<br>
+                    • Message Throughput (msgs/sec)<br>
+                    • Failed Messages → DLQ count
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Database Metrics</strong></td>
+                <td>
+                    • Outbox Queue Depth (pending events)<br>
+                    • Query Latency<br>
+                    • Connection Pool Usage<br>
+                    • Lock Wait Time (inventory)
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2 id="failures">Failure Scenarios</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Failure</th>
+                <th>Impact</th>
+                <th>Recovery</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Kafka Down</td>
+                <td>Events buffered in outbox</td>
+                <td>Outbox holds events, auto publishes when Kafka back</td>
+            </tr>
+            <tr>
+                <td>Payment Service Down</td>
+                <td>Orders stuck in APPROVED state</td>
+                <td>Consumer catches up from offset</td>
+            </tr>
+            <tr>
+                <td>Inventory Out of Stock</td>
+                <td>Order cancelled</td>
+                <td>INVENTORY_FAILED event triggers cancellation</td>
+            </tr>
+            <tr>
+                <td>Payment Gateway Fails</td>
+                <td>Order cancelled</td>
+                <td>PAYMENT_FAILED event triggers cancellation</td>
+            </tr>
+            <tr>
+                <td>Database Connection Lost</td>
+                <td>Service unavailable</td>
+                <td>Restart service, reconnect</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2 id="tech-stack">Technology Stack</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Layer</th>
+                <th>Technologies</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Application Layer</strong></td>
+                <td>
+                    • TypeScript + Node.js 20+<br>
+                    • Fastify (HTTP framework)<br>
+                    • Zod (Schema validation)
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Messaging Layer</strong></td>
+                <td>
+                    • Apache Kafka (Event streaming)<br>
+                    • kafkajs (Client library)<br>
+                    • Idempotent producers
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Data Layer</strong></td>
+                <td>
+                    • PostgreSQL 15 (ACID transactions)<br>
+                    • pg (Client library)<br>
+                    • Per-service databases
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Observability Layer</strong></td>
+                <td>
+                    • Pino (Structured logging)<br>
+                    • prom-client (Metrics)<br>
+                    • Correlation IDs
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Infrastructure</strong></td>
+                <td>
+                    • Docker + Docker Compose<br>
+                    • GitHub Actions (CI/CD)<br>
+                    • Jest (Testing)
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p><strong>OrderFlow</strong> - Production-Grade Event-Driven Microservices System</p>
+        <p>GitHub: <a href="https://github.com/puneethkotha/Order-Flow">github.com/puneethkotha/Order-Flow</a></p>
+        <p>Generated: February 2026</p>
+    </div>
+</body>
+</html>
