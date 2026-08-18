@@ -72,6 +72,17 @@ export const OrderCancelledEventSchema = BaseEventSchema.extend({
 
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
+// Capture command (coordinator -> payment), reachable only from FULFILLING.
+export const CaptureRequestedEventSchema = BaseEventSchema.extend({
+  eventType: z.literal('CAPTURE_REQUESTED'),
+  payload: z.object({
+    orderId: z.string(),
+    amount: z.number().positive(),
+  }),
+});
+
+export type CaptureRequestedEvent = z.infer<typeof CaptureRequestedEventSchema>;
+
 // Payment Events
 export const PaymentAuthorizedEventSchema = BaseEventSchema.extend({
   eventType: z.literal('PAYMENT_AUTHORIZED'),
@@ -95,6 +106,40 @@ export const PaymentFailedEventSchema = BaseEventSchema.extend({
 });
 
 export type PaymentFailedEvent = z.infer<typeof PaymentFailedEventSchema>;
+
+export const PaymentCapturedEventSchema = BaseEventSchema.extend({
+  eventType: z.literal('PAYMENT_CAPTURED'),
+  payload: z.object({
+    paymentId: z.string(),
+    orderId: z.string(),
+    amount: z.number().positive(),
+  }),
+});
+
+export type PaymentCapturedEvent = z.infer<typeof PaymentCapturedEventSchema>;
+
+// Compensation acknowledgements (payment -> coordinator).
+export const PaymentVoidedEventSchema = BaseEventSchema.extend({
+  eventType: z.literal('PAYMENT_VOIDED'),
+  payload: z.object({
+    paymentId: z.string(),
+    orderId: z.string(),
+    amount: z.number().positive(),
+  }),
+});
+
+export type PaymentVoidedEvent = z.infer<typeof PaymentVoidedEventSchema>;
+
+export const PaymentRefundedEventSchema = BaseEventSchema.extend({
+  eventType: z.literal('PAYMENT_REFUNDED'),
+  payload: z.object({
+    paymentId: z.string(),
+    orderId: z.string(),
+    amount: z.number().positive(),
+  }),
+});
+
+export type PaymentRefundedEvent = z.infer<typeof PaymentRefundedEventSchema>;
 
 // Inventory Events
 export const InventoryReservedEventSchema = BaseEventSchema.extend({
@@ -130,16 +175,37 @@ export const InventoryFailedEventSchema = BaseEventSchema.extend({
 
 export type InventoryFailedEvent = z.infer<typeof InventoryFailedEventSchema>;
 
+// Compensation acknowledgement (inventory -> coordinator).
+export const InventoryReleasedEventSchema = BaseEventSchema.extend({
+  eventType: z.literal('INVENTORY_RELEASED'),
+  payload: z.object({
+    orderId: z.string(),
+    items: z.array(
+      z.object({
+        sku: z.string(),
+        quantity: z.number().int().positive(),
+      })
+    ),
+  }),
+});
+
+export type InventoryReleasedEvent = z.infer<typeof InventoryReleasedEventSchema>;
+
 // Union type for all events
 export type DomainEvent =
   | OrderCreatedEvent
   | OrderApprovedEvent
   | OrderStateChangedEvent
   | OrderCancelledEvent
+  | CaptureRequestedEvent
   | PaymentAuthorizedEvent
   | PaymentFailedEvent
+  | PaymentCapturedEvent
+  | PaymentVoidedEvent
+  | PaymentRefundedEvent
   | InventoryReservedEvent
-  | InventoryFailedEvent;
+  | InventoryFailedEvent
+  | InventoryReleasedEvent;
 
 // Event type constants
 export const EventTypes = {
@@ -147,10 +213,15 @@ export const EventTypes = {
   ORDER_APPROVED: 'ORDER_APPROVED',
   ORDER_STATE_CHANGED: 'ORDER_STATE_CHANGED',
   ORDER_CANCELLED: 'ORDER_CANCELLED',
+  CAPTURE_REQUESTED: 'CAPTURE_REQUESTED',
   PAYMENT_AUTHORIZED: 'PAYMENT_AUTHORIZED',
   PAYMENT_FAILED: 'PAYMENT_FAILED',
+  PAYMENT_CAPTURED: 'PAYMENT_CAPTURED',
+  PAYMENT_VOIDED: 'PAYMENT_VOIDED',
+  PAYMENT_REFUNDED: 'PAYMENT_REFUNDED',
   INVENTORY_RESERVED: 'INVENTORY_RESERVED',
   INVENTORY_FAILED: 'INVENTORY_FAILED',
+  INVENTORY_RELEASED: 'INVENTORY_RELEASED',
 } as const;
 
 // Kafka Topics

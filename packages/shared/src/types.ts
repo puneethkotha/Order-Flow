@@ -11,6 +11,9 @@ export enum PaymentStatus {
   PENDING = 'PENDING',
   AUTHORIZED = 'AUTHORIZED',
   FAILED = 'FAILED',
+  CAPTURED = 'CAPTURED',
+  VOIDED = 'VOIDED',
+  REFUNDED = 'REFUNDED',
 }
 
 export enum InventoryReservationStatus {
