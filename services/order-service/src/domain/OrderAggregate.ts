@@ -55,7 +55,7 @@ export class OrderAggregate {
     this.updatedAt = new Date();
   }
 
-  cancel(reason: string): void {
+  cancel(_reason: string): void {
     if (this.state === OrderState.COMPLETED) {
       throw new Error('Cannot cancel completed order');
     }

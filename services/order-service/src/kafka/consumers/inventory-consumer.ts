@@ -51,15 +51,16 @@ export class InventoryEventConsumer {
       );
 
       switch (event.eventType) {
-        case EventTypes.INVENTORY_RESERVED:
+        case EventTypes.INVENTORY_RESERVED: {
           const reservedEvent = InventoryReservedEventSchema.parse(event);
           await this.orderService.handleInventoryReserved(
             reservedEvent.payload.orderId,
             correlationId
           );
           break;
+        }
 
-        case EventTypes.INVENTORY_FAILED:
+        case EventTypes.INVENTORY_FAILED: {
           const failedEvent = InventoryFailedEventSchema.parse(event);
           await this.orderService.handleInventoryFailed(
             failedEvent.payload.orderId,
@@ -67,6 +68,7 @@ export class InventoryEventConsumer {
             correlationId
           );
           break;
+        }
 
         default:
           logger.warn({ eventType: event.eventType }, 'Unknown inventory event type');

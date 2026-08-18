@@ -7,14 +7,14 @@ on:
     branches: [main, develop]
 
 jobs:
-  lint:
-    name: Lint
+  lint-build:
+    name: Lint and build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -22,125 +22,59 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linter
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Lint
         run: npm run lint
 
-  build:
-    name: Build
+  test:
+    name: Unit and property tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [order-service, payment-service, inventory-service]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install root dependencies
+      - name: Install dependencies
         run: npm ci
 
       - name: Build shared package
-        run: |
-          cd packages/shared
-          npm run build
+        run: npm run build --workspace=packages/shared
 
-      - name: Build ${{ matrix.service }}
-        run: |
-          cd services/${{ matrix.service }}
-          npm run build
+      - name: Run tests (shared + services)
+        run: npm test
 
-  test:
-    name: Unit Tests
+  spec:
+    name: TLA+ model check (TLC)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [order-service, payment-service, inventory-service]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests for ${{ matrix.service }}
-        run: |
-          cd services/${{ matrix.service }}
-          npm test || echo "Tests not implemented yet"
-
-  integration:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: orderflow
-          POSTGRES_PASSWORD: orderflow123
-          POSTGRES_DB: orderdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      kafka:
-        image: confluentinc/cp-kafka:7.5.0
-        env:
-          KAFKA_BROKER_ID: 1
-          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run integration tests
-        run: npm run test:integration || echo "Integration tests not implemented yet"
-        env:
-          DATABASE_URL: postgresql://orderflow:orderflow123@localhost:5432/orderdb
-          KAFKA_BROKERS: localhost:9092
-
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build Docker Compose services
-        run: |
-          docker-compose -f docker/docker-compose.yml build || echo "Docker build placeholder"
+      - name: Model-check the saga spec with TLC
+        run: bash spec/run-tlc.sh
 
   security:
-    name: Security Scan
+    name: Dependency audit
     runs-on: ubuntu-latest
+    # Advisory only: transitive advisories should not block the correctness
+    # gates above. Shown transparently rather than silently swallowed.
+    continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -148,9 +82,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate || true
-
-      - name: Check for known vulnerabilities
-        run: |
-          npm audit --production || echo "Vulnerabilities found - review required"
+      - name: npm audit
+        run: npm audit --audit-level=high

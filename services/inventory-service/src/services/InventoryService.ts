@@ -30,7 +30,7 @@ export class InventoryService {
           const reserved = await this.inventoryRepo.reserveQuantity(item.sku, item.quantity, client);
 
           if (reserved) {
-            const reservation = await this.reservationRepo.create(orderId, item.sku, item.quantity, client);
+            await this.reservationRepo.create(orderId, item.sku, item.quantity, client);
             reservations.push({ sku: item.sku, quantity: item.quantity });
           } else {
             const inventoryItem = await this.inventoryRepo.findBySku(item.sku, client);

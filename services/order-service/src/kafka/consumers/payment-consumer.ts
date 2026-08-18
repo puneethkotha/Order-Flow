@@ -51,15 +51,16 @@ export class PaymentEventConsumer {
       );
 
       switch (event.eventType) {
-        case EventTypes.PAYMENT_AUTHORIZED:
+        case EventTypes.PAYMENT_AUTHORIZED: {
           const authorizedEvent = PaymentAuthorizedEventSchema.parse(event);
           await this.orderService.handlePaymentAuthorized(
             authorizedEvent.payload.orderId,
             correlationId
           );
           break;
+        }
 
-        case EventTypes.PAYMENT_FAILED:
+        case EventTypes.PAYMENT_FAILED: {
           const failedEvent = PaymentFailedEventSchema.parse(event);
           await this.orderService.handlePaymentFailed(
             failedEvent.payload.orderId,
@@ -67,6 +68,7 @@ export class PaymentEventConsumer {
             correlationId
           );
           break;
+        }
 
         default:
           logger.warn({ eventType: event.eventType }, 'Unknown payment event type');

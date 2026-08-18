@@ -223,7 +223,6 @@ export class OrderService {
         throw new Error(`Order ${orderId} not found`);
       }
 
-      const previousState = order.state;
       order.cancel(reason);
       await this.orderRepo.save(order, client);
 
