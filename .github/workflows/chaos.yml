@@ -1,0 +1,49 @@
+name: Chaos and integration
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # nightly at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      scenarios:
+        description: 'Number of chaos scenarios'
+        default: '1000'
+
+jobs:
+  chaos:
+    name: Seeded chaos runner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run seeded chaos scenarios (corrected)
+        run: npm run chaos -- --seed 1 --scenarios ${{ github.event.inputs.scenarios || '1000' }} --mode corrected
+      - name: Upload chaos summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-summary
+          path: test/chaos/summary.json
+
+  integration:
+    name: Testcontainers integration
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [order-service, payment-service, inventory-service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+      - name: Integration tests (${{ matrix.service }})
+        run: npm run test:integration --workspace=services/${{ matrix.service }}

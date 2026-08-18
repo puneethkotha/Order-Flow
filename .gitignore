@@ -23,3 +23,6 @@ spec/MC*.out
 x_*.out
 detailed.log
 run.txt
+
+# chaos runner output
+test/chaos/summary.json
