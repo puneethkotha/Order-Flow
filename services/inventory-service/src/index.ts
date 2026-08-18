@@ -23,7 +23,7 @@ async function bootstrap() {
   const outboxRepo = new OutboxRepository();
   const idempotencyRepo = new IdempotencyRepository();
 
-  const inventoryService = new InventoryService(inventoryRepo, reservationRepo, outboxRepo);
+  const inventoryService = new InventoryService(inventoryRepo, reservationRepo, outboxRepo, idempotencyRepo);
 
   registerRoutes(app, inventoryService, inventoryRepo);
 
@@ -49,7 +49,7 @@ async function bootstrap() {
     heartbeatInterval: 3000,
   });
 
-  const orderEventConsumer = new OrderEventConsumer(orderConsumer, inventoryService, idempotencyRepo);
+  const orderEventConsumer = new OrderEventConsumer(orderConsumer, inventoryService);
   await orderEventConsumer.start();
 
   try {
