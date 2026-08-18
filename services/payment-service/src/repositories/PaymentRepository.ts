@@ -33,12 +33,35 @@ export class PaymentRepository {
     return this.mapToPayment(result.rows[0]);
   }
 
-  async findByOrderId(orderId: string): Promise<Payment | null> {
-    const result = await db.query('SELECT * FROM payments WHERE order_id = $1', [orderId]);
+  async findByOrderId(orderId: string, client?: PoolClient): Promise<Payment | null> {
+    const queryClient = client || db;
+    const result = await queryClient.query('SELECT * FROM payments WHERE order_id = $1', [orderId]);
     if (result.rows.length === 0) {
       return null;
     }
     return this.mapToPayment(result.rows[0]);
+  }
+
+  async updateStatus(id: string, status: PaymentStatus, client?: PoolClient): Promise<void> {
+    const queryClient = client || db;
+    await queryClient.query(
+      'UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2',
+      [status, id]
+    );
+  }
+
+  async recordLedger(
+    orderId: string,
+    paymentId: string,
+    kind: string,
+    amount: number,
+    client: PoolClient
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO payment_ledger (id, order_id, payment_id, kind, amount)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+      [orderId, paymentId, kind, amount]
+    );
   }
 
   private mapToPayment(row: any): Payment {

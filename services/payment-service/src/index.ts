@@ -21,7 +21,7 @@ async function bootstrap() {
   const outboxRepo = new OutboxRepository();
   const idempotencyRepo = new IdempotencyRepository();
 
-  const paymentService = new PaymentService(paymentRepo, outboxRepo);
+  const paymentService = new PaymentService(paymentRepo, outboxRepo, idempotencyRepo);
 
   registerRoutes(app, paymentService);
 
@@ -47,7 +47,7 @@ async function bootstrap() {
     heartbeatInterval: 3000,
   });
 
-  const orderEventConsumer = new OrderEventConsumer(orderConsumer, paymentService, idempotencyRepo);
+  const orderEventConsumer = new OrderEventConsumer(orderConsumer, paymentService);
   await orderEventConsumer.start();
 
   try {

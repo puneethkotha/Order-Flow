@@ -64,4 +64,22 @@ export const migrations = [
     `,
     down: `DROP TABLE IF EXISTS schema_migrations;`,
   },
+  {
+    version: 5,
+    name: 'create_payment_ledger_table',
+    up: `
+      CREATE TABLE IF NOT EXISTS payment_ledger (
+        id UUID PRIMARY KEY,
+        order_id UUID NOT NULL,
+        payment_id UUID NOT NULL,
+        kind VARCHAR(50) NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX idx_payment_ledger_order_id ON payment_ledger(order_id);
+      CREATE INDEX idx_payment_ledger_kind ON payment_ledger(kind);
+    `,
+    down: `DROP TABLE IF EXISTS payment_ledger;`,
+  },
 ];

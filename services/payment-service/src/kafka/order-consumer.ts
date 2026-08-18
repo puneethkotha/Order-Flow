@@ -1,62 +1,63 @@
 import { Consumer, EachMessagePayload } from 'kafkajs';
 import { PaymentService } from '../services/PaymentService';
-import { IdempotencyRepository } from '../repositories/IdempotencyRepository';
-import { OrderApprovedEventSchema, EventTypes, Topics } from '@orderflow/shared';
+import {
+  OrderApprovedEventSchema,
+  CaptureRequestedEventSchema,
+  OrderCancelledEventSchema,
+  EventTypes,
+  Topics,
+} from '@orderflow/shared';
 import { logger } from '../utils/logger';
 
 export class OrderEventConsumer {
   constructor(
     private consumer: Consumer,
-    private paymentService: PaymentService,
-    private idempotencyRepo: IdempotencyRepository
+    private paymentService: PaymentService
   ) {}
 
   async start(): Promise<void> {
     await this.consumer.connect();
     await this.consumer.subscribe({ topic: Topics.ORDER_EVENTS, fromBeginning: false });
-
     await this.consumer.run({
-      eachMessage: async (payload: EachMessagePayload) => {
-        await this.handleMessage(payload);
-      },
+      eachMessage: async (payload: EachMessagePayload) => this.handleMessage(payload),
     });
-
     logger.info('Order event consumer started');
   }
 
   private async handleMessage(payload: EachMessagePayload): Promise<void> {
-    const { topic, partition, message } = payload;
-    const messageId = `${topic}-${partition}-${message.offset}`;
-
+    const { message } = payload;
     try {
-      if (await this.idempotencyRepo.isProcessed(messageId)) {
-        logger.debug({ messageId }, 'Message already processed, skipping');
-        return;
-      }
-
       const event = JSON.parse(message.value?.toString() || '{}');
       const correlationId = message.headers?.correlationId?.toString() || event.correlationId;
 
-      if (event.eventType === EventTypes.ORDER_APPROVED) {
-        const approvedEvent = OrderApprovedEventSchema.parse(event);
-        logger.info(
-          { orderId: approvedEvent.payload.orderId, correlationId },
-          'Processing ORDER_APPROVED event'
-        );
-
-        const idempotencyKey = `order-${approvedEvent.payload.orderId}`;
-        await this.paymentService.authorizePayment(
-          approvedEvent.payload.orderId,
-          approvedEvent.payload.total,
-          idempotencyKey,
-          correlationId
-        );
-
-        await this.idempotencyRepo.markProcessed(messageId);
+      switch (event.eventType) {
+        case EventTypes.ORDER_APPROVED: {
+          const e = OrderApprovedEventSchema.parse(event);
+          // idempotencyKey ties the payment decision to the order identity.
+          await this.paymentService.authorizePayment(
+            e.payload.orderId,
+            e.payload.total,
+            `order-${e.payload.orderId}`,
+            correlationId
+          );
+          break;
+        }
+        case EventTypes.CAPTURE_REQUESTED: {
+          const e = CaptureRequestedEventSchema.parse(event);
+          await this.paymentService.capturePayment(e.payload.orderId, e.eventId, correlationId);
+          break;
+        }
+        case EventTypes.ORDER_CANCELLED: {
+          const e = OrderCancelledEventSchema.parse(event);
+          await this.paymentService.compensate(e.payload.orderId, e.eventId, correlationId);
+          break;
+        }
+        default:
+          break;
       }
     } catch (err) {
-      logger.error({ err, messageId }, 'Error processing order event');
-      throw err;
+      logger.error({ err }, 'Error processing order event');
+      throw err; // offset not committed; Kafka redelivers
     }
   }
 
