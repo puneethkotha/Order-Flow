@@ -11,3 +11,15 @@ coverage/
 *~
 .vscode/
 .idea/
+
+# TLA+ / Apalache tooling and generated artifacts
+tools/
+spec/states/
+spec/_apalache-out/
+spec/*_TTrace_*.tla
+spec/*_TTrace_*.bin
+spec/*.old
+spec/MC*.out
+x_*.out
+detailed.log
+run.txt

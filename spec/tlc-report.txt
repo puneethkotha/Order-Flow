@@ -1,0 +1,190 @@
+==================================================================
+TLC: corrected design (expect: no violations)
+==================================================================
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 16 and seed -909133147901084556 with 11 workers on 11 cores with 4096MB heap and 64MB offheap memory [pid: 55174] (Mac OS X 26.5.1 aarch64, Amazon.com Inc. 11.0.24 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/puneeth/Documents/Projects/OrderFlow/spec/OrderSaga.tla
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/Naturals.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/Sequences.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/FiniteSets.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/_TLCTrace.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/TLC.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/TLCExt.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-2523554231381349307/Integers.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module Integers
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module OrderSaga
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module OrderSaga
+Starting... (2026-08-18 01:51:56)
+Implied-temporal checking--satisfiability problem has 1 branches.
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-18 01:51:56.
+Progress(20) at 2026-08-18 01:51:58: 93,484 states generated, 14,471 distinct states found, 0 states left on queue.
+Checking temporal properties for the complete state space with 14471 total distinct states at (2026-08-18 01:51:58)
+Finished checking temporal properties in 00s at 2026-08-18 01:51:58
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 6.2E-11
+93484 states generated, 14471 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 20.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 7 and the 95th percentile is 3).
+Finished in 02s at (2026-08-18 01:51:58)
+
+==================================================================
+TLC: uncorrected design (expect: counterexample)
+==================================================================
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 118 and seed 5590955184330395794 with 11 workers on 11 cores with 4096MB heap and 64MB offheap memory [pid: 55198] (Mac OS X 26.5.1 aarch64, Amazon.com Inc. 11.0.24 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/puneeth/Documents/Projects/OrderFlow/spec/OrderSaga.tla
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/Naturals.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/Sequences.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/FiniteSets.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/_TLCTrace.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/TLC.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/TLCExt.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/xt/hr8499pd0yzg8kqhm9r_gd4w0000gn/T/tlc-18136811851197239757/Integers.tla (jar:file:/Users/puneeth/Documents/Projects/OrderFlow/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module Integers
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module OrderSaga
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module OrderSaga
+Starting... (2026-08-18 01:51:59)
+Implied-temporal checking--satisfiability problem has 1 branches.
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-18 01:51:59.
+Error: Invariant I7 is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ proc = [AP_PAY |-> FALSE, AP_INV |-> FALSE, PAUTH |-> FALSE, PFAIL |-> FALSE, IRES |-> FALSE, IFAIL |-> FALSE, CAPREQ |-> FALSE, PCAP |-> FALSE, CANpay |-> FALSE, CANinv |-> FALSE]
+/\ phases = <<"DRAFT">>
+/\ coord = [ state |-> "DRAFT",
+  payAuth |-> FALSE,
+  invReserved |-> FALSE,
+  fulfillCount |-> 0 ]
+/\ net = [AP_PAY |-> 0, AP_INV |-> 0, PAUTH |-> 0, PFAIL |-> 0, IRES |-> 0, IFAIL |-> 0, CAPREQ |-> 0, PCAP |-> 0, CANpay |-> 0, CANinv |-> 0]
+/\ inv = [ failed |-> FALSE,
+  cancelled |-> FALSE,
+  reserved |-> 0,
+  reservedEver |-> FALSE,
+  released |-> FALSE ]
+/\ pay = [ auth |-> FALSE,
+  captured |-> FALSE,
+  voided |-> FALSE,
+  refunded |-> FALSE,
+  failed |-> FALSE,
+  decided |-> FALSE,
+  cancelled |-> FALSE ]
+/\ stockReserved = 0
+
+State 2: <Approve line 71, col 5 to line 75, col 50 of module OrderSaga>
+/\ proc = [AP_PAY |-> FALSE, AP_INV |-> FALSE, PAUTH |-> FALSE, PFAIL |-> FALSE, IRES |-> FALSE, IFAIL |-> FALSE, CAPREQ |-> FALSE, PCAP |-> FALSE, CANpay |-> FALSE, CANinv |-> FALSE]
+/\ phases = <<"DRAFT", "APPROVED">>
+/\ coord = [ state |-> "APPROVED",
+  payAuth |-> FALSE,
+  invReserved |-> FALSE,
+  fulfillCount |-> 0 ]
+/\ net = [AP_PAY |-> 1, AP_INV |-> 1, PAUTH |-> 0, PFAIL |-> 0, IRES |-> 0, IFAIL |-> 0, CAPREQ |-> 0, PCAP |-> 0, CANpay |-> 0, CANinv |-> 0]
+/\ inv = [ failed |-> FALSE,
+  cancelled |-> FALSE,
+  reserved |-> 0,
+  reservedEver |-> FALSE,
+  released |-> FALSE ]
+/\ pay = [ auth |-> FALSE,
+  captured |-> FALSE,
+  voided |-> FALSE,
+  refunded |-> FALSE,
+  failed |-> FALSE,
+  decided |-> FALSE,
+  cancelled |-> FALSE ]
+/\ stockReserved = 0
+
+State 3: <Duplicate line 79, col 5 to line 80, col 65 of module OrderSaga>
+/\ proc = [AP_PAY |-> FALSE, AP_INV |-> FALSE, PAUTH |-> FALSE, PFAIL |-> FALSE, IRES |-> FALSE, IFAIL |-> FALSE, CAPREQ |-> FALSE, PCAP |-> FALSE, CANpay |-> FALSE, CANinv |-> FALSE]
+/\ phases = <<"DRAFT", "APPROVED">>
+/\ coord = [ state |-> "APPROVED",
+  payAuth |-> FALSE,
+  invReserved |-> FALSE,
+  fulfillCount |-> 0 ]
+/\ net = [AP_PAY |-> 1, AP_INV |-> 2, PAUTH |-> 0, PFAIL |-> 0, IRES |-> 0, IFAIL |-> 0, CAPREQ |-> 0, PCAP |-> 0, CANpay |-> 0, CANinv |-> 0]
+/\ inv = [ failed |-> FALSE,
+  cancelled |-> FALSE,
+  reserved |-> 0,
+  reservedEver |-> FALSE,
+  released |-> FALSE ]
+/\ pay = [ auth |-> FALSE,
+  captured |-> FALSE,
+  voided |-> FALSE,
+  refunded |-> FALSE,
+  failed |-> FALSE,
+  decided |-> FALSE,
+  cancelled |-> FALSE ]
+/\ stockReserved = 0
+
+State 4: <DeliverAP_INV line 101, col 5 to line 114, col 47 of module OrderSaga>
+/\ proc = [AP_PAY |-> FALSE, AP_INV |-> TRUE, PAUTH |-> FALSE, PFAIL |-> FALSE, IRES |-> FALSE, IFAIL |-> FALSE, CAPREQ |-> FALSE, PCAP |-> FALSE, CANpay |-> FALSE, CANinv |-> FALSE]
+/\ phases = <<"DRAFT", "APPROVED">>
+/\ coord = [ state |-> "APPROVED",
+  payAuth |-> FALSE,
+  invReserved |-> FALSE,
+  fulfillCount |-> 0 ]
+/\ net = [AP_PAY |-> 1, AP_INV |-> 1, PAUTH |-> 0, PFAIL |-> 0, IRES |-> 1, IFAIL |-> 0, CAPREQ |-> 0, PCAP |-> 0, CANpay |-> 0, CANinv |-> 0]
+/\ inv = [ failed |-> FALSE,
+  cancelled |-> FALSE,
+  reserved |-> 1,
+  reservedEver |-> TRUE,
+  released |-> FALSE ]
+/\ pay = [ auth |-> FALSE,
+  captured |-> FALSE,
+  voided |-> FALSE,
+  refunded |-> FALSE,
+  failed |-> FALSE,
+  decided |-> FALSE,
+  cancelled |-> FALSE ]
+/\ stockReserved = 1
+
+State 5: <DeliverAP_INV line 101, col 5 to line 114, col 47 of module OrderSaga>
+/\ proc = [AP_PAY |-> FALSE, AP_INV |-> TRUE, PAUTH |-> FALSE, PFAIL |-> FALSE, IRES |-> FALSE, IFAIL |-> FALSE, CAPREQ |-> FALSE, PCAP |-> FALSE, CANpay |-> FALSE, CANinv |-> FALSE]
+/\ phases = <<"DRAFT", "APPROVED">>
+/\ coord = [ state |-> "APPROVED",
+  payAuth |-> FALSE,
+  invReserved |-> FALSE,
+  fulfillCount |-> 0 ]
+/\ net = [AP_PAY |-> 1, AP_INV |-> 0, PAUTH |-> 0, PFAIL |-> 0, IRES |-> 1, IFAIL |-> 0, CAPREQ |-> 0, PCAP |-> 0, CANpay |-> 0, CANinv |-> 0]
+/\ inv = [ failed |-> FALSE,
+  cancelled |-> FALSE,
+  reserved |-> 2,
+  reservedEver |-> TRUE,
+  released |-> FALSE ]
+/\ pay = [ auth |-> FALSE,
+  captured |-> FALSE,
+  voided |-> FALSE,
+  refunded |-> FALSE,
+  failed |-> FALSE,
+  decided |-> FALSE,
+  cancelled |-> FALSE ]
+/\ stockReserved = 2
+
+333 states generated, 205 distinct states found, 122 states left on queue.
+The depth of the complete state graph search is 7.
+Finished in 00s at (2026-08-18 01:51:59)
+Trace exploration spec path: ./OrderSaga_TTrace_1787043118.tla
+
+==================================================================
+Summary
+==================================================================
+corrected:   PASS (all invariants and L1 hold)
+uncorrected: PASS (counterexample found, as expected; TLC rc=12)
