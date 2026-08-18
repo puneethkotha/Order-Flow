@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PaymentService } from '../services/PaymentService';
 import { logger } from '../utils/logger';
+import { register, httpRequests } from '../metrics';
 
 interface AuthorizePaymentBody {
   orderId: string;
@@ -8,12 +9,21 @@ interface AuthorizePaymentBody {
 }
 
 export function registerRoutes(app: FastifyInstance, paymentService: PaymentService): void {
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.addHook('onResponse', async (request, reply) => {
+    httpRequests.inc({
+      method: request.method,
+      route: request.routeOptions?.url ?? request.url,
+      status: String(reply.statusCode),
+    });
+  });
+
+  app.get('/health', async () => {
     return { status: 'healthy', service: 'payment-service', timestamp: new Date().toISOString() };
   });
 
-  app.get('/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
-    return { message: 'Metrics endpoint - integrate prom-client here' };
+  app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply) => {
+    reply.header('Content-Type', register.contentType);
+    return register.metrics();
   });
 
   app.post(

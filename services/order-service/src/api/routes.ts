@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { OrderService } from '../services/OrderService';
 import { OrderItem } from '@orderflow/shared';
 import { logger } from '../utils/logger';
+import { register, httpRequests } from '../metrics';
 
 interface CreateOrderBody {
   customerId: string;
@@ -13,15 +14,24 @@ interface ApproveOrderParams {
 }
 
 export function registerRoutes(app: FastifyInstance, orderService: OrderService): void {
+  // Count every response by method, route, and status.
+  app.addHook('onResponse', async (request, reply) => {
+    httpRequests.inc({
+      method: request.method,
+      route: request.routeOptions?.url ?? request.url,
+      status: String(reply.statusCode),
+    });
+  });
+
   // Health check
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/health', async () => {
     return { status: 'healthy', service: 'order-service', timestamp: new Date().toISOString() };
   });
 
-  // Metrics endpoint (basic)
-  app.get('/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
-    // In production, use prom-client to expose real metrics
-    return { message: 'Metrics endpoint - integrate prom-client here' };
+  // Prometheus metrics
+  app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply) => {
+    reply.header('Content-Type', register.contentType);
+    return register.metrics();
   });
 
   // Create order

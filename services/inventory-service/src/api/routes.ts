@@ -3,14 +3,24 @@ import { InventoryService } from '../services/InventoryService';
 import { InventoryRepository } from '../repositories/InventoryRepository';
 import { db } from '../db/client';
 import { logger } from '../utils/logger';
+import { register, httpRequests } from '../metrics';
 
 export function registerRoutes(app: FastifyInstance, inventoryService: InventoryService, inventoryRepo: InventoryRepository): void {
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.addHook('onResponse', async (request, reply) => {
+    httpRequests.inc({
+      method: request.method,
+      route: request.routeOptions?.url ?? request.url,
+      status: String(reply.statusCode),
+    });
+  });
+
+  app.get('/health', async () => {
     return { status: 'healthy', service: 'inventory-service', timestamp: new Date().toISOString() };
   });
 
-  app.get('/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
-    return { message: 'Metrics endpoint - integrate prom-client here' };
+  app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply) => {
+    reply.header('Content-Type', register.contentType);
+    return register.metrics();
   });
 
   app.post(
